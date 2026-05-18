@@ -1,0 +1,2 @@
+host.docker.internal:5462:*:ai_sql:ai_sql
+host.docker.internal:5460:*:postgres:postgres

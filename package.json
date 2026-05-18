@@ -1,0 +1,13 @@
+{
+  "name": "ai-sql-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev:frontend": "pnpm --filter ai-sql-frontend dev",
+    "dev:backend": "cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=local",
+    "build:frontend": "pnpm --filter ai-sql-frontend build",
+    "build:backend": "cd backend && mvn -DskipTests package"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

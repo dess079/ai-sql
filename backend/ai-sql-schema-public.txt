@@ -1,0 +1,369 @@
+# AI SQL Schema — public — built at 2026-05-18 13:24:19 — 26 tables
+
+=== DATABASE SCHEMA ===
+
+TABLE: tb_ape_appointment_equipment -- Association N↔N : équipements/consommables réellement utilisés lors d'un rendez-vous.
+  ape_id text NOT NULL PK -- Identifiant technique du lien.
+  app_id text NOT NULL UNIQUE FK→tb_app_appointment.app_id -- FK vers TB_APP_APPOINTMENT.
+  equ_id text NOT NULL UNIQUE FK→tb_equ_equipment.equ_id -- FK vers TB_EQU_EQUIPMENT.
+  ape_quantity int4 NOT NULL -- Quantité utilisée.
+  ape_notes_txt text NULL -- Notes (lot, péremption, etc.).
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_app_appointment -- Rendez-vous planifiés (patient, employé, salle, traitement, créneau).
+  app_id text NOT NULL PK -- Identifiant technique du rendez-vous.
+  pat_id text NOT NULL FK→tb_pat_patient.pat_id -- FK vers TB_PAT_PATIENT — patient concerné.
+  emp_id text NOT NULL FK→tb_emp_employee.emp_id -- FK vers TB_EMP_EMPLOYEE — employé prenant en charge.
+  roo_id text NULL FK→tb_roo_room.roo_id -- FK vers TB_ROO_ROOM — salle réservée (optionnel).
+  trt_id text NOT NULL FK→tb_trt_treatment_type.trt_id -- FK vers TB_TRT_TREATMENT_TYPE — traitement prévu.
+  app_start_dte timestamp NOT NULL -- Date/heure de début du rendez-vous.
+  app_end_dte timestamp NOT NULL -- Date/heure de fin du rendez-vous (doit être > start).
+  app_status_code text NOT NULL -- Statut (PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED).
+  app_notes_txt text NULL -- Notes libres ajoutées au dossier.
+  app_cancellation_reason_txt text NULL -- Motif d'annulation si annulé.
+  app_reminder_sent bool NOT NULL -- TRUE si le rappel patient a été envoyé.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_cli_clinic -- Coordonnées et informations de la clinique (singleton métier — une seule ligne logique attendue).
+  cli_id text NOT NULL PK -- Identifiant technique de la clinique.
+  cli_name text NOT NULL -- Nom officiel de la clinique.
+  cli_address_txt text NULL -- Première ligne d'adresse postale.
+  cli_address_line_2 text NULL -- Deuxième ligne d'adresse (bureau, suite, local, etc.).
+  cli_city text NULL -- Ville.
+  cli_province text NULL -- Province ou état.
+  cli_postal_code text NULL -- Code postal (Canada : format A1A 1A1).
+  cli_country text NOT NULL -- Code pays ISO 3166-1 alpha-2 (par défaut CA).
+  cli_phone text NULL -- Numéro de téléphone principal de la clinique.
+  cli_email text NULL -- Adresse courriel principale de la clinique.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_cmp_competitor -- Cliniques concurrentes observées au Québec pour la veille tarifaire.
+  cmp_id text NOT NULL PK -- Identifiant technique du compétiteur.
+  cmp_name text NOT NULL UNIQUE -- Nom commercial unique du compétiteur.
+  cmp_city text NULL -- Ville du compétiteur.
+  cmp_region text NULL -- Région/province du compétiteur.
+  cmp_website_url text NULL -- URL du site officiel.
+  cmp_source_label text NULL -- Étiquette de la source de l'information (annuaire, scrape, etc.).
+  cmp_is_active bool NOT NULL -- Compétiteur suivi activement.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_cph_competitor_price_history -- Historique des prix observés chez les compétiteurs pour chaque traitement.
+  cph_id text NOT NULL PK -- Identifiant technique de l'observation.
+  cmp_id text NOT NULL UNIQUE FK→tb_cmp_competitor.cmp_id -- FK vers TB_CMP_COMPETITOR.
+  trt_id text NOT NULL UNIQUE FK→tb_trt_treatment_type.trt_id -- FK vers TB_TRT_TREATMENT_TYPE.
+  cph_observed_dte timestamp NOT NULL UNIQUE -- Date/heure de l'observation.
+  cph_price_amt numeric NOT NULL -- Prix observé.
+  cph_currency_code bpchar NOT NULL -- Code ISO 4217 de la devise (par défaut CAD).
+  cph_source_url text NULL -- URL de la page d'où provient l'information.
+  cph_source_note_txt text NULL -- Notes libres sur la source.
+  cph_is_estimated bool NOT NULL -- TRUE si le prix est estimé (non observé directement).
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_eav_employee_availability -- Plages de disponibilité hebdomadaire d'un employé (gabarit récurrent).
+  eav_id text NOT NULL PK -- Identifiant technique de la plage.
+  emp_id text NOT NULL FK→tb_emp_employee.emp_id -- FK vers TB_EMP_EMPLOYEE.
+  eav_day_of_week text NOT NULL -- Jour de la semaine (MONDAY..SUNDAY).
+  eav_start_time text NOT NULL -- Heure de début (HH:MM).
+  eav_end_time text NOT NULL -- Heure de fin (HH:MM).
+  eav_is_active bool NOT NULL -- Plage active.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_emp_employee -- Employés du cabinet (dentistes, hygiénistes, assistants, réception). 1↔1 avec TB_USE_USER.
+  emp_id text NOT NULL PK -- Identifiant technique de l'employé.
+  use_id text NOT NULL UNIQUE FK→tb_use_user.use_id -- FK vers TB_USE_USER — compte de connexion.
+  emt_code text NOT NULL FK→tb_emt_employee_type.emt_code -- FK vers TB_EMT_EMPLOYEE_TYPE.EMT_CODE — type d'emploi.
+  emp_specialization text NULL -- Spécialisation (ex: Orthodontie, Endodontie). Optionnel.
+  emp_license_number text NULL UNIQUE -- Numéro de licence professionnelle (ordre des dentistes).
+  emp_biography_txt text NULL -- Biographie publique affichée sur le portail patient.
+  emp_consultation_duration_min int4 NOT NULL -- Durée par défaut d'une consultation, en minutes.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_emt_employee_type -- Catalogue des types d'employés (Dentiste, Hygiéniste, Assistant, Réception…). Référencé par TB_EMP_EMPLOYEE.
+  emt_id text NOT NULL PK -- Identifiant technique du type d'employé.
+  emt_name text NOT NULL -- Libellé affichable du type.
+  emt_description_fr text NULL -- Description en français.
+  emt_description_en text NULL -- Description en anglais.
+  emt_code text NOT NULL UNIQUE -- Code métier stable (ex: EMP-TYPE-DENTIST). Référencé par FK.
+  emt_is_active bool NOT NULL -- Type actif (visible dans les listes) ou archivé.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_epc_employee_pause_configuration -- Plages de pause récurrentes d'un employé (pause repas, etc.).
+  epc_id text NOT NULL PK -- Identifiant technique de la pause.
+  emp_id text NOT NULL FK→tb_emp_employee.emp_id -- FK vers TB_EMP_EMPLOYEE.
+  epc_day_of_week text NOT NULL -- Jour de la semaine (MONDAY..SUNDAY).
+  epc_start_time text NOT NULL -- Heure de début (HH:MM).
+  epc_end_time text NOT NULL -- Heure de fin (HH:MM).
+  epc_label_txt text NULL -- Libellé de la pause (ex: « Dîner »).
+  epc_is_active bool NOT NULL -- Pause active.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_eqc_equipment_category -- Catégories métier des équipements (Clinique, Stérilisation, Imagerie, Consommables…).
+  eqc_id text NOT NULL PK -- Identifiant technique de la catégorie.
+  eqc_name text NOT NULL -- Libellé affichable de la catégorie.
+  eqc_code text NOT NULL UNIQUE -- Code unique (ex: CAT-CLINIQUE).
+  eqc_description_fr text NULL -- Description en français.
+  eqc_icon text NULL -- Nom de l'icône Material à afficher.
+  eqc_color text NULL -- Couleur HEX associée (chips, badges).
+  eqc_sort_order int4 NOT NULL -- Ordre de tri pour l'affichage.
+  eqc_is_active bool NOT NULL -- Catégorie visible dans les listes.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_equ_equipment -- Inventaire des équipements et consommables (fauteuils, instruments, matériaux). Couvre la gestion de stock.
+  equ_id text NOT NULL PK -- Identifiant technique de l'équipement.
+  equ_name text NOT NULL -- Nom commercial de l'équipement.
+  equ_description_fr text NULL -- Description en français.
+  equ_description_en text NULL -- Description en anglais.
+  equ_code text NOT NULL UNIQUE -- Code interne unique (ex: EQU-CHAIR-001).
+  equ_status_code text NOT NULL -- Statut opérationnel (AVAILABLE, IN_USE, MAINTENANCE, OUT_OF_SERVICE).
+  equ_last_maintenance_dte timestamp NULL -- Date de la dernière maintenance effectuée.
+  equ_next_maintenance_dte timestamp NULL -- Date prévue de la prochaine maintenance.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+  eqc_id text NULL FK→tb_eqc_equipment_category.eqc_id -- FK vers TB_EQC_EQUIPMENT_CATEGORY — catégorie de l'équipement.
+  equ_quantity_current int4 NOT NULL -- Quantité actuellement en stock.
+  equ_quantity_min int4 NOT NULL -- Quantité minimale tolérée (alerte si en dessous).
+  equ_quantity_reorder_point int4 NOT NULL -- Seuil déclenchant une commande de réapprovisionnement.
+  equ_quantity_reorder_qty int4 NOT NULL -- Quantité à commander lors d'un réapprovisionnement.
+  equ_unit_txt text NOT NULL -- Unité de comptage (ex: unité, boîte, paquet).
+  equ_unit_cost_amt numeric NULL -- Coût unitaire d'achat (CAD).
+  equ_supplier_name text NULL -- Nom du fournisseur préféré.
+  equ_supplier_ref text NULL -- Référence catalogue chez le fournisseur.
+  equ_location_txt text NULL -- Emplacement physique de stockage.
+  equ_order_notes_txt text NULL -- Notes pour la commande (conditions, contact).
+  equ_lead_time_days int4 NOT NULL -- Délai d'approvisionnement en jours.
+  equ_last_order_dte date NULL -- Date de la dernière commande passée.
+  equ_is_consumable bool NOT NULL -- TRUE si consommable (sinon équipement durable).
+
+TABLE: tb_etr_etl_run -- Journal des exécutions du pipeline ETL de collecte des prix concurrents.
+  etr_id text NOT NULL PK -- Identifiant technique du run ETL.
+  etr_run_dte timestamp NOT NULL -- Date/heure de démarrage du run.
+  etr_status_code text NOT NULL -- Statut final (SUCCESS, PARTIAL, FAILED).
+  etr_total_sources int4 NOT NULL -- Nombre total de sources tentées.
+  etr_success_sources int4 NOT NULL -- Nombre de sources traitées avec succès.
+  etr_failed_sources int4 NOT NULL -- Nombre de sources en erreur.
+  etr_total_rows int4 NOT NULL -- Nombre total de lignes ingérées.
+  etr_error_summary_txt text NULL -- Synthèse des erreurs rencontrées.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_ili_invoice_line -- Lignes de facture (un acte, un consommable ou un produit par ligne).
+  ili_id text NOT NULL PK -- Identifiant technique de la ligne.
+  inv_id text NOT NULL FK→tb_inv_invoice.inv_id -- FK vers TB_INV_INVOICE (cascade delete).
+  trt_id text NULL FK→tb_trt_treatment_type.trt_id -- FK vers TB_TRT_TREATMENT_TYPE (si ligne d'acte).
+  equ_id text NULL FK→tb_equ_equipment.equ_id -- FK vers TB_EQU_EQUIPMENT (si consommable facturé).
+  ili_code_acq text NULL -- Code ACQ (Association des chirurgiens dentistes du Québec).
+  ili_description text NOT NULL -- Description affichée de la ligne.
+  ili_tooth_number text NULL -- Numéro de dent concernée (notation FDI).
+  ili_quantity int4 NOT NULL -- Quantité facturée (>0).
+  ili_unit_price_amt numeric NOT NULL -- Prix unitaire en CAD.
+  ili_total_amt numeric NOT NULL -- Total de la ligne (quantité × prix unitaire).
+  ili_taxable bool NOT NULL -- TRUE si la ligne est taxable (TPS/TVQ).
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_inv_invoice -- Factures émises pour un patient, éventuellement rattachées à un rendez-vous.
+  inv_id text NOT NULL PK -- Identifiant technique de la facture.
+  pat_id text NOT NULL FK→tb_pat_patient.pat_id -- FK vers TB_PAT_PATIENT.
+  app_id text NULL FK→tb_app_appointment.app_id -- FK vers TB_APP_APPOINTMENT (optionnel).
+  inv_number text NOT NULL UNIQUE -- Numéro de facture unique affiché.
+  inv_date date NOT NULL -- Date d'émission.
+  inv_due_date date NULL -- Date d'échéance.
+  inv_status_code text NOT NULL -- Statut (DRAFT, SENT, PARTIAL, PAID, OVERDUE, CANCELLED).
+  inv_subtotal_amt numeric NOT NULL -- Sous-total HT.
+  inv_tax_tps_amt numeric NOT NULL -- Montant de TPS.
+  inv_tax_tvq_amt numeric NOT NULL -- Montant de TVQ.
+  inv_total_amt numeric NOT NULL -- Total TTC.
+  inv_paid_amt numeric NOT NULL -- Montant déjà encaissé.
+  inv_balance_amt numeric NOT NULL -- Solde restant dû.
+  inv_notes_txt text NULL -- Notes libres affichées sur la facture.
+  inv_insurance_plan text NULL -- Référence du régime d'assurance applicable.
+  inv_ins_covered_amt numeric NOT NULL -- Montant couvert par l'assurance.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_oru_optimization_rule -- Règles déclaratives utilisées par le moteur d'optimisation du planning.
+  oru_id text NOT NULL PK -- Identifiant technique de la règle.
+  oru_name text NOT NULL -- Nom de la règle.
+  oru_rule_type text NOT NULL -- Type de règle (CONSTRAINT, PREFERENCE, ...).
+  oru_description_fr text NULL -- Description en français.
+  oru_description_en text NULL -- Description en anglais.
+  oru_priority int4 NOT NULL -- Priorité (plus grand = plus prioritaire).
+  oru_condition_json text NOT NULL -- Condition JSON évaluée par le moteur.
+  oru_action_json text NOT NULL -- Action JSON appliquée si la condition est vraie.
+  oru_is_active bool NOT NULL -- Règle active.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_pat_patient -- Fiche médicale et coordonnées du patient. 1↔1 avec TB_USE_USER (rôle PATIENT).
+  pat_id text NOT NULL PK -- Identifiant technique du patient (UUID textuel).
+  use_id text NOT NULL UNIQUE FK→tb_use_user.use_id -- FK vers TB_USE_USER — compte de connexion associé.
+  pat_date_of_birth timestamp NULL -- Date de naissance du patient (utilisée pour l'âge et la pédiatrie).
+  pat_address_txt text NULL -- Adresse postale complète sur une seule ligne libre.
+  pat_city text NULL -- Ville de résidence.
+  pat_postal_code text NULL -- Code postal (Canada : format A1A 1A1).
+  pat_emergency_contact text NULL -- Contact d'urgence (nom + téléphone).
+  pat_allergies_txt text NULL -- Allergies connues — texte libre, visible du dentiste.
+  pat_medical_notes_txt text NULL -- Notes médicales libres (antécédents, traitements en cours).
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_pay_payment -- Paiements encaissés rattachés à une facture (un ou plusieurs paiements par facture).
+  pay_id text NOT NULL PK -- Identifiant technique du paiement.
+  inv_id text NOT NULL FK→tb_inv_invoice.inv_id -- FK vers TB_INV_INVOICE.
+  pay_dte timestamp NOT NULL -- Date/heure du paiement.
+  pay_amount_amt numeric NOT NULL -- Montant encaissé (>0).
+  pay_method_code text NOT NULL -- Mode de paiement (CASH, CREDIT, DEBIT, INSURANCE, CHEQUE, TRANSFER).
+  pay_reference_txt text NULL -- Référence externe (n° de transaction, n° de chèque).
+  pay_notes_txt text NULL -- Notes libres.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_roe_room_equipment -- Association N↔N : équipements installés/affectés à une salle.
+  roe_id text NOT NULL PK -- Identifiant technique du lien.
+  roo_id text NOT NULL UNIQUE FK→tb_roo_room.roo_id -- FK vers TB_ROO_ROOM.
+  equ_id text NOT NULL UNIQUE FK→tb_equ_equipment.equ_id -- FK vers TB_EQU_EQUIPMENT.
+  roe_quantity int4 NOT NULL -- Quantité d'équipement dans la salle.
+  roe_notes_txt text NULL -- Notes libres sur l'installation.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_roo_room -- Salles physiques du cabinet (fauteuils, salle d'imagerie, etc.). Référencée par TB_APP_APPOINTMENT.
+  roo_id text NOT NULL PK -- Identifiant technique de la salle.
+  roo_name text NOT NULL UNIQUE -- Nom unique affiché de la salle (ex: « Salle A »).
+  roo_room_number text NULL -- Numéro/code interne de la salle.
+  roo_description_fr text NULL -- Description fonctionnelle en français.
+  roo_description_en text NULL -- Description fonctionnelle en anglais.
+  roo_capacity int4 NOT NULL -- Capacité simultanée (nombre de patients).
+  roo_floor_number int4 NULL -- Étage où se trouve la salle.
+  roo_is_active bool NOT NULL -- Salle utilisable pour la prise de rendez-vous.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_rto_refresh_token -- Refresh tokens JWT émis pour les utilisateurs (rotation et révocation).
+  rto_id text NOT NULL PK -- Identifiant technique du token.
+  rto_token_value text NOT NULL UNIQUE -- Valeur opaque du refresh token (unique).
+  use_id text NOT NULL FK→tb_use_user.use_id -- FK vers TB_USE_USER — utilisateur propriétaire.
+  rto_expires_dte timestamp NOT NULL -- Date d'expiration absolue.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_the_theme -- Thèmes visuels (palette de couleurs MUI) sélectionnables dans l'interface.
+  the_id text NOT NULL PK -- Identifiant technique du thème.
+  the_name text NOT NULL UNIQUE -- Nom technique unique (slug).
+  the_display_name text NOT NULL -- Nom affichable en français.
+  the_display_name_en text NULL -- Nom affichable en anglais.
+  the_description_fr text NULL -- Description en français.
+  the_description_en text NULL -- Description en anglais.
+  the_primary_main bpchar NOT NULL -- Couleur principale (HEX).
+  the_primary_light bpchar NOT NULL -- Variante claire de la couleur principale.
+  the_primary_dark bpchar NOT NULL -- Variante foncée de la couleur principale.
+  the_primary_contrast_text bpchar NOT NULL -- Couleur du texte sur fond principal.
+  the_secondary_main bpchar NOT NULL -- Couleur secondaire (HEX).
+  the_secondary_light bpchar NOT NULL -- Variante claire de la couleur secondaire.
+  the_secondary_dark bpchar NOT NULL -- Variante foncée de la couleur secondaire.
+  the_secondary_contrast_text bpchar NOT NULL -- Couleur du texte sur fond secondaire.
+  the_background_default bpchar NOT NULL -- Couleur de fond par défaut.
+  the_background_paper bpchar NOT NULL -- Couleur de fond des « papers » MUI.
+  the_text_primary bpchar NOT NULL -- Couleur du texte principal.
+  the_text_secondary bpchar NOT NULL -- Couleur du texte secondaire.
+  the_success_main bpchar NULL -- Couleur de succès.
+  the_error_main bpchar NULL -- Couleur d'erreur.
+  the_warning_main bpchar NULL -- Couleur d'avertissement.
+  the_info_main bpchar NULL -- Couleur d'information.
+  the_is_default bool NOT NULL -- TRUE si thème appliqué par défaut.
+  the_is_active bool NOT NULL -- Thème proposable aux utilisateurs.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_tre_treatment_equipment -- Association N↔N : équipements nécessaires (ou recommandés) pour un traitement.
+  tre_id text NOT NULL PK -- Identifiant technique du lien.
+  trt_id text NOT NULL UNIQUE FK→tb_trt_treatment_type.trt_id -- FK vers TB_TRT_TREATMENT_TYPE.
+  equ_id text NOT NULL UNIQUE FK→tb_equ_equipment.equ_id -- FK vers TB_EQU_EQUIPMENT.
+  tre_quantity int4 NOT NULL -- Quantité requise pour réaliser le traitement.
+  tre_is_mandatory bool NOT NULL -- TRUE si l'équipement est obligatoire.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_trt_treatment_type -- Catalogue des actes/traitements proposés au cabinet, avec durée et tarif standard.
+  trt_id text NOT NULL PK -- Identifiant technique du traitement.
+  trt_name text NOT NULL -- Libellé affichable du traitement.
+  trt_description_fr text NULL -- Description en français.
+  trt_description_en text NULL -- Description en anglais.
+  trt_duration_min int4 NOT NULL -- Durée prévue en minutes.
+  trt_price_amt numeric NOT NULL -- Tarif catalogue en CAD.
+  trt_code text NOT NULL UNIQUE -- Code unique du traitement (utilisé en facturation, ex: ACQ ou interne).
+  trt_requirements_txt text NULL -- Pré-requis ou consignes patient/dentiste.
+  trt_pause_duration_min int4 NULL -- Pause à prévoir après l'acte (minutes).
+  trt_requires_anesthesia bool NULL -- TRUE si une anesthésie est requise.
+  trt_is_active bool NOT NULL -- Traitement actif et proposable.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_ttl_theme_type_link -- Association N↔N : un thème peut appartenir à plusieurs types de thème.
+  ttl_id text NOT NULL PK -- Identifiant technique du lien.
+  the_id text NOT NULL UNIQUE FK→tb_the_theme.the_id -- FK vers TB_THE_THEME.
+  tty_id text NOT NULL UNIQUE FK→tb_tty_theme_type.tty_id -- FK vers TB_TTY_THEME_TYPE.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_tty_theme_type -- Catalogue des types de thème (LIGHT, DARK, HIGH_CONTRAST…).
+  tty_id text NOT NULL PK -- Identifiant technique du type.
+  tty_type_code text NOT NULL UNIQUE -- Code unique (ex: LIGHT, DARK).
+  tty_type_name_fr text NOT NULL -- Libellé en français.
+  tty_type_name_en text NOT NULL -- Libellé en anglais.
+  tty_description_fr text NULL -- Description en français.
+  tty_description_en text NULL -- Description en anglais.
+  tty_is_active bool NOT NULL -- Type actif.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+TABLE: tb_use_user -- Comptes utilisateurs de l'application (patients, employés, dentistes, admins). Référencée par tous les rôles applicatifs.
+  use_id text NOT NULL PK -- Identifiant technique unique de l'utilisateur (UUID textuel).
+  use_email text NOT NULL UNIQUE -- Adresse courriel — unique, sert d'identifiant de connexion.
+  use_password_hash text NOT NULL -- Empreinte du mot de passe (bcrypt/argon2). Jamais en clair.
+  use_first_name text NOT NULL -- Prénom légal de l'utilisateur.
+  use_last_name text NOT NULL -- Nom de famille légal de l'utilisateur.
+  use_phone text NULL -- Numéro de téléphone principal (format libre, validé côté applicatif).
+  use_role_code text NOT NULL -- Code rôle applicatif (PATIENT, EMPLOYEE, DENTIST, ADMIN…).
+  use_is_active bool NOT NULL -- Indique si le compte est actif (FALSE = désactivé/bloqué).
+  use_last_login_dte timestamp NULL -- Date/heure de la dernière connexion réussie.
+  rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
+  rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
+  rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+
+=== END SCHEMA ===

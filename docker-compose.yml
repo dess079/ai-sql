@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:18.3
+    container_name: ai-sql-postgres
+    environment:
+      POSTGRES_DB: ai_sql_demo
+      POSTGRES_USER: ai_sql
+      POSTGRES_PASSWORD: ai_sql
+    ports:
+      - "5462:5432"
+    volumes:
+      - ai_sql_pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_sql -d ai_sql_demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ai-sql-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@aisql.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGPASSFILE: /var/lib/pgadmin/pgpass
+    ports:
+      - "5051:80"
+    volumes:
+      - ./.docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./.docker/pgadmin/pgpass:/pgadmin4/pgpass_src:ro
+      - ai_sql_pgadmin:/var/lib/pgadmin
+    entrypoint: >
+      /bin/sh -c "cp /pgadmin4/pgpass_src /var/lib/pgadmin/pgpass && chmod 600 /var/lib/pgadmin/pgpass && /entrypoint.sh"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  ai_sql_pgdata:
+  ai_sql_pgadmin:

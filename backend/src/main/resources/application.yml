@@ -1,0 +1,97 @@
+spring:
+  application:
+    name: ai-sql-demo
+  profiles:
+    default: local
+  ai:
+    retry:
+      max-attempts: 1
+    openai:
+      api-key: ${GITHUB_TOKEN:${OPENAI_API_KEY:}}
+      base-url: ${AI_SQL_OPENAI_BASE_URL:https://models.inference.ai.azure.com}
+      chat:
+        options:
+          model: ${AI_SQL_DEFAULT_MODEL:gpt-4.1-mini}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+ai-sql:
+  enabled: true
+  default-model: ${AI_SQL_DEFAULT_MODEL:gpt-4.1-mini}
+  schema:
+    default-schema: public
+    cache-ttl-minutes: 30
+  sql:
+    allow-mutations: false
+    max-rows: 1000
+  conversation:
+    history-message-count: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+server:
+  port: 4000
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:postgresql://localhost:5462/ai_sql_demo
+    username: ai_sql
+    password: ai_sql
+ai-sql:
+  target-datasource:
+    url: jdbc:postgresql://localhost:5460/cabinet_rdv
+    username: postgres
+    password: postgres
+server:
+  port: 4000
+
+---
+spring:
+  config:
+    activate:
+      on-profile: container
+  datasource:
+    url: jdbc:postgresql://postgres:5432/ai_sql_demo
+    username: ai_sql
+    password: ai_sql
+server:
+  port: 4001
+
+---
+spring:
+  config:
+    activate:
+      on-profile: cloud
+  datasource:
+    url: ${DATASOURCE_URL}
+    username: ${DATASOURCE_USERNAME}
+    password: ${DATASOURCE_PASSWORD}
+server:
+  port: 4002
+
+---
+# Profil Ollama — modèle local, aucune limite de tokens, aucun coût.
+# Lancer avec : SPRING_PROFILES_ACTIVE=local,ollama mvn spring-boot:run
+# Prérequis : ollama serve (port 11434 par défaut)
+spring:
+  config:
+    activate:
+      on-profile: ollama
+  ai:
+    openai:
+      api-key: ollama
+      base-url: http://localhost:11434/v1
+ai-sql:
+  default-model: qwen2.5-coder:14b
+  ollama:
+    enabled: true

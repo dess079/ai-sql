@@ -1,0 +1,24 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "ai-sql (postgres:18.3)",
+      "Group": "ai-sql",
+      "Host": "host.docker.internal",
+      "Port": 5462,
+      "MaintenanceDB": "ai_sql_demo",
+      "Username": "ai_sql",
+      "SSLMode": "prefer",
+      "PassFile": "/pgpass"
+    },
+    "2": {
+      "Name": "cabinet-dentaire (postgres:16)",
+      "Group": "cabinet-dentaire",
+      "Host": "host.docker.internal",
+      "Port": 5460,
+      "MaintenanceDB": "cabinet_rdv",
+      "Username": "postgres",
+      "SSLMode": "prefer",
+      "PassFile": "/pgpass"
+    }
+  }
+}

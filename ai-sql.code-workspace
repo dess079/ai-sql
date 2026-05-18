@@ -1,0 +1,121 @@
+{
+  "folders": [
+    { "name": "backend (demo)",        "path": "backend" },
+    { "name": "frontend (demo)",       "path": "frontend" },
+    { "name": "@sd/ai-sql (lib)",      "path": "../libs/ai-sql-lib" },
+    { "name": "ai-sql-starter (lib)",  "path": "../libs/ai-sql-spring-boot-starter" }
+  ],
+  "settings": {
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "js/ts.tsdk.path": "frontend (demo)/node_modules/typescript/lib",
+    "editor.formatOnSave": true,
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/target": true,
+      "**/dist": true,
+      "**/.git": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/target": true,
+      "**/dist": true
+    }
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "starter: install",
+        "type": "shell",
+        "command": "mvn -DskipTests install",
+        "options": { "cwd": "${workspaceFolder:ai-sql-starter (lib)}" },
+        "group": "build"
+      },
+      {
+        "label": "backend: package",
+        "type": "shell",
+        "command": "mvn -DskipTests package",
+        "options": { "cwd": "${workspaceFolder:backend (demo)}" },
+        "group": { "kind": "build", "isDefault": true },
+        "dependsOn": "starter: install"
+      },
+      {
+        "label": "backend: test",
+        "type": "shell",
+        "command": "mvn test",
+        "options": { "cwd": "${workspaceFolder:ai-sql-starter (lib)}" },
+        "group": { "kind": "test", "isDefault": true }
+      },
+      {
+        "label": "lib: build",
+        "type": "shell",
+        "command": "npm run build",
+        "options": { "cwd": "${workspaceFolder:@sd/ai-sql (lib)}" },
+        "group": "build"
+      },
+      {
+        "label": "frontend: dev",
+        "type": "shell",
+        "command": "AI_SQL_PROFILE=local npm run dev",
+        "options": { "cwd": "${workspaceFolder:frontend (demo)}" },
+        "isBackground": true,
+        "presentation": { "reveal": "always", "panel": "new", "group": "dev" },
+        "problemMatcher": {
+          "pattern": { "regexp": "^$" },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "VITE",
+            "endsPattern": "Local:"
+          }
+        },
+        "group": "build"
+      },
+      {
+        "label": "backend: run",
+        "type": "shell",
+        "command": "SPRING_PROFILES_ACTIVE=local mvn spring-boot:run",
+        "options": { "cwd": "${workspaceFolder:backend (demo)}" },
+        "isBackground": true,
+        "presentation": { "reveal": "always", "panel": "new", "group": "dev" },
+        "problemMatcher": {
+          "pattern": { "regexp": "^$" },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "Spring Boot",
+            "endsPattern": "Started AiSqlDemoApplication"
+          }
+        },
+        "group": "build"
+      },
+      {
+        "label": "dev: start all",
+        "dependsOn": ["backend: run", "frontend: dev"],
+        "dependsOrder": "parallel",
+        "group": { "kind": "build", "isDefault": false },
+        "problemMatcher": []
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "java",
+        "name": "AiSqlDemoApplication",
+        "request": "launch",
+        "mainClass": "dev.sd.aisqldemo.AiSqlDemoApplication",
+        "projectName": "ai-sql-demo",
+        "envFile": "${workspaceFolder:backend (demo)}/../.env.local"
+      }
+    ]
+  },
+  "extensions": {
+    "recommendations": [
+      "vscjava.vscode-java-pack",
+      "vmware.vscode-spring-boot",
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "redhat.vscode-xml"
+    ]
+  }
+}
