@@ -1,4 +1,4 @@
-# AI SQL Schema — public — built at 2026-05-18 13:24:19 — 26 tables
+# AI SQL Schema — public — built at 2026-05-28 20:07:57 — 29 tables
 
 === DATABASE SCHEMA ===
 
@@ -17,7 +17,7 @@ TABLE: tb_app_appointment -- Rendez-vous planifiés (patient, employé, salle, t
   pat_id text NOT NULL FK→tb_pat_patient.pat_id -- FK vers TB_PAT_PATIENT — patient concerné.
   emp_id text NOT NULL FK→tb_emp_employee.emp_id -- FK vers TB_EMP_EMPLOYEE — employé prenant en charge.
   roo_id text NULL FK→tb_roo_room.roo_id -- FK vers TB_ROO_ROOM — salle réservée (optionnel).
-  trt_id text NOT NULL FK→tb_trt_treatment_type.trt_id -- FK vers TB_TRT_TREATMENT_TYPE — traitement prévu.
+  trt_id text NULL FK→tb_trt_treatment_type.trt_id -- FK vers TB_TRT_TREATMENT_TYPE — traitement prévu.
   app_start_dte timestamp NOT NULL -- Date/heure de début du rendez-vous.
   app_end_dte timestamp NOT NULL -- Date/heure de fin du rendez-vous (doit être > start).
   app_status_code text NOT NULL -- Statut (PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED).
@@ -27,6 +27,17 @@ TABLE: tb_app_appointment -- Rendez-vous planifiés (patient, employé, salle, t
   rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
   rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
   rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+  app_end_time_override bool NOT NULL
+
+TABLE: tb_att_appointment_treatment
+  att_id text NOT NULL PK
+  app_id text NOT NULL UNIQUE FK→tb_app_appointment.app_id
+  trt_id text NOT NULL UNIQUE FK→tb_trt_treatment_type.trt_id
+  att_sequence int4 NOT NULL
+  att_notes_txt text NULL
+  rec_create_dte timestamp NOT NULL
+  rec_update_dte timestamp NOT NULL
+  rec_update_user text NOT NULL
 
 TABLE: tb_cli_clinic -- Coordonnées et informations de la clinique (singleton métier — une seule ligne logique attendue).
   cli_id text NOT NULL PK -- Identifiant technique de la clinique.
@@ -91,6 +102,10 @@ TABLE: tb_emp_employee -- Employés du cabinet (dentistes, hygiénistes, assista
   rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
   rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
   rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+  emp_sal_scale_id text NULL FK→tb_sal_salary_scale.sal_id
+  emp_salary_annual numeric NULL
+  emp_salary_type text NULL
+  emp_salary_effective_date date NULL
 
 TABLE: tb_emt_employee_type -- Catalogue des types d'employés (Dentiste, Hygiéniste, Assistant, Réception…). Référencé par TB_EMP_EMPLOYEE.
   emt_id text NOT NULL PK -- Identifiant technique du type d'employé.
@@ -277,6 +292,37 @@ TABLE: tb_rto_refresh_token -- Refresh tokens JWT émis pour les utilisateurs (r
   rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
   rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
 
+TABLE: tb_sal_salary_scale
+  sal_id text NOT NULL PK
+  emt_code text NOT NULL UNIQUE FK→tb_emt_employee_type.emt_code
+  sal_grade_code text NOT NULL UNIQUE
+  sal_grade_label text NOT NULL
+  sal_annual_min int4 NOT NULL
+  sal_annual_max int4 NOT NULL
+  sal_hourly_min numeric NULL
+  sal_hourly_max numeric NULL
+  sal_years_exp_min int4 NOT NULL
+  sal_years_exp_max int4 NULL
+  sal_description_fr text NULL
+  sal_reference_year int4 NOT NULL
+  rec_create_dte timestamp NOT NULL
+  rec_update_dte timestamp NOT NULL
+  rec_update_user text NOT NULL
+
+TABLE: tb_tca_treatment_category
+  tca_id text NOT NULL PK
+  tca_code text NOT NULL UNIQUE
+  tca_name text NOT NULL
+  tca_name_en text NULL
+  tca_description_fr text NULL
+  tca_icon_code text NULL
+  tca_color_hex bpchar NULL
+  tca_sort_order int4 NOT NULL
+  tca_is_active bool NOT NULL
+  rec_create_dte timestamp NOT NULL
+  rec_update_dte timestamp NOT NULL
+  rec_update_user text NOT NULL
+
 TABLE: tb_the_theme -- Thèmes visuels (palette de couleurs MUI) sélectionnables dans l'interface.
   the_id text NOT NULL PK -- Identifiant technique du thème.
   the_name text NOT NULL UNIQUE -- Nom technique unique (slug).
@@ -331,6 +377,10 @@ TABLE: tb_trt_treatment_type -- Catalogue des actes/traitements proposés au cab
   rec_create_dte timestamp NOT NULL -- Horodatage de création de la ligne (rempli automatiquement par trigger d'audit).
   rec_update_dte timestamp NOT NULL -- Horodatage de dernière mise à jour (rempli automatiquement par trigger d'audit).
   rec_update_user text NOT NULL -- Identifiant de l'utilisateur ou du système ayant effectué la dernière modification.
+  tca_id text NULL FK→tb_tca_treatment_category.tca_id
+  trt_name_en text NULL
+  trt_code_system text NULL
+  trt_external_code text NULL
 
 TABLE: tb_ttl_theme_type_link -- Association N↔N : un thème peut appartenir à plusieurs types de thème.
   ttl_id text NOT NULL PK -- Identifiant technique du lien.
