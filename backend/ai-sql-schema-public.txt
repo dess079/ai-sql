@@ -1,4 +1,4 @@
-# AI SQL Schema — public — built at 2026-05-28 20:07:57 — 29 tables
+# AI SQL Schema — public — built at 2026-06-08 10:49:07 — 29 tables
 
 === DATABASE SCHEMA ===
 
