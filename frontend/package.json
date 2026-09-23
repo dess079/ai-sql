@@ -9,14 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@sd/ai-sql": "file:../../libs/ai-sql-lib",
-    "shared-components": "file:../../libs/shared-components",
+    "@auth0/auth0-react": "^2.27.0",
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^7.0.0",
     "@mui/material": "^7.0.0",
+    "@sd/ai-sql": "file:../../libs/ai-sql-lib",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "shared-components": "file:../../libs/shared-components"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

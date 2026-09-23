@@ -1,35 +1,38 @@
 FROM node:24-alpine AS build
 
-WORKDIR /workspace
+# Arborescence miroir de l'hôte : /app = /Users/sd/dev
+#   /app/ai-sql/frontend + /app/libs/{shared-components,ai-sql-lib}
+# Les chemins RELATIFS du lockfile (`file:../../libs/...`) restent valides.
+#
+# NOTE 1 : le .dockerignore de shared-components exclut dist/ → il faut
+# construire la lib dans le conteneur (npx rollup -c).
+# NOTE 2 : le contexte ai-sql-lib embarque le node_modules pnpm de l'hôte ;
+# npm ci du frontend résout `file:../..` via CE node_modules périmé → purge.
+COPY --from=ai_sql_lib . /app/libs/ai-sql-lib
+COPY --from=shared_components . /app/libs/shared-components
+COPY . /app/ai-sql/frontend
 
-COPY --from=ai_sql_lib . /workspace/libs/ai-sql-lib
-COPY --from=shared_components . /workspace/libs/shared-components
-COPY . /workspace/ai-sql/frontend
+RUN rm -rf /app/libs/ai-sql-lib/node_modules
 
-WORKDIR /workspace/libs/shared-components
+WORKDIR /app/libs/shared-components
 
-RUN npm install
+RUN npm ci --ignore-scripts --no-audit --no-fund \
+    && npx rollup -c
 
-RUN npm run build
+WORKDIR /app/ai-sql/frontend
 
-WORKDIR /workspace/libs/ai-sql-lib
-
-RUN npm install
-
-RUN npm run build
-
-WORKDIR /workspace/ai-sql/frontend
-
-RUN npm install
+RUN npm ci --ignore-scripts --no-audit --no-fund
 
 ARG VITE_BACKEND_URL=http://localhost:4001
 ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+# Active les alias absolus de libs dans vite.config.ts (arbo /app figée)
+ENV AI_SQL_CONTAINER_BUILD=1
 
 RUN npm run build
 
 FROM nginx:1.27-alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /workspace/ai-sql/frontend/dist /usr/share/nginx/html
+COPY --from=build /app/ai-sql/frontend/dist /usr/share/nginx/html
 
 EXPOSE 80
