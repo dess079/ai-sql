@@ -23,10 +23,10 @@ export default defineConfig(({ mode }) => {
       dedupe: ["react", "react-dom", "@emotion/react", "@emotion/styled"],
       alias: inContainer
         ? {
-            "shared-components": "/app/libs/shared-components/dist/index.esm.js",
-            "@sd/ai-sql": "/app/libs/ai-sql-lib/dist/index.esm.js",
             "@sd/ai-sql/ui": "/app/libs/ai-sql-lib/dist/ui/index.esm.js",
             "@sd/ai-sql/hooks": "/app/libs/ai-sql-lib/dist/hooks/index.esm.js",
+            "@sd/ai-sql": "/app/libs/ai-sql-lib/dist/index.esm.js",
+            "shared-components": "/app/libs/shared-components/dist/index.esm.js",
           }
         : {},
     },
